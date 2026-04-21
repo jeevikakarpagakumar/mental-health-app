@@ -5,7 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Check, X, Users, Stethoscope, ClipboardList } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertTriangle, Check, X, Users, Stethoscope, ClipboardList, CalendarDays, Ban, Edit } from "lucide-react";
+import { resolveImageUrl } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -13,21 +19,25 @@ export default function AdminDashboard() {
   const [allDoctors, setAllDoctors] = useState([]);
   const [users, setUsers] = useState([]);
   const [highRisk, setHighRisk] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [editing, setEditing] = useState(null);
 
   const loadAll = async () => {
     try {
-      const [s, p, d, u, h] = await Promise.all([
+      const [s, p, d, u, h, a] = await Promise.all([
         api.get("/admin/stats"),
         api.get("/admin/doctors/pending"),
         api.get("/admin/doctors"),
         api.get("/admin/users"),
         api.get("/admin/high-risk"),
+        api.get("/admin/appointments"),
       ]);
       setStats(s.data);
       setPending(p.data);
       setAllDoctors(d.data);
       setUsers(u.data);
       setHighRisk(h.data);
+      setAppointments(a.data);
     } catch (e) {
       toast.error("Failed to load admin data");
     }
