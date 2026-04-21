@@ -10,45 +10,47 @@ detection, analytics, and doctor appointment booking with admin approval.
 
 ## Architecture
 - **Backend** (`/app/backend`): FastAPI + SQLAlchemy + SQLite. All routes under `/api`. Firebase
-  Admin SDK verifies ID tokens from the frontend. `emergentintegrations` (GPT-4o-mini) powers
-  the AI emotion classifier and the Aura chatbot.
-- **Frontend** (`/app/frontend`): React + CRA + Tailwind + Shadcn UI. Firebase web SDK handles
-  email/password + Google sign-in. Routes are role-aware via `ProtectedRoute`.
+  Admin SDK verifies ID tokens. `emergentintegrations` (GPT-4o-mini) powers emotion classification
+  and the Aura chatbot. Emergent **object storage** for doctor profile images.
+- **Frontend** (`/app/frontend`): React + CRA + Tailwind + Shadcn UI. Firebase web SDK for
+  email/password + Google sign-in + password reset. Role-aware routing via `ProtectedRoute`.
 
 ## User Personas
-- **Patient** — tracks mood, journals, chats with Aura, takes assessments, books doctors.
-- **Doctor** — registers with credentials; remains invisible until admin approves; sees own
-  appointments once approved.
-- **Admin** — approves/rejects doctors, monitors high-risk patients, oversees appointments.
+- **Patient** — tracks mood, journals, chats with Aura, takes assessments, books doctors, manages profile.
+- **Doctor** — registers with credentials+uploaded avatar; invisible until admin-approved;
+  sees own appointments and "My patients" list with risk context.
+- **Admin** — approves/rejects doctors, monitors high-risk patients, manages (cancel/reschedule) appointments.
 
-## Implemented (Feb 2026 — initial MVP)
-- Firebase Email/Password AND Google Sign-In (web popup)
-- Role selection screen; role defaults to `null` on first login so new users *must* choose
-- Patient: Dashboard (bento grid with risk banner, insights, mood, recent journals, CTAs),
-  Mood Log (slider + emotion chips), Journal (+ AI emotion chip & confidence), Chat (context-
-  aware Aura), Assessment wizard for PHQ-9 & GAD-7 (severity + helplines), Analytics
-  (recharts line + pie), Book Appointment (doctor cards + calendar + slots), Appointments list
-- Doctor: Registration form, Pending approval screen, Dashboard with upcoming/past visits
-- Admin: Console with stats, pending doctors (approve/reject), all doctors, all users,
-  high-risk monitor
-- Earthy "Organic" design (Deep Forest Green + Terracotta + Sand) with Outfit/Manrope fonts,
-  glass header, bento layouts, card hover motion, recharts analytics
-- Backend endpoints: /api/user/{me,set-role}, /api/mood, /api/journal, /api/insights,
-  /api/chat, /api/analytics, /api/risk, /api/assessment, /api/patient/profile,
-  /api/doctor/{register,me,list}, /api/admin/{stats,doctors/pending,doctors,approve,
-  reject,users,high-risk}, /api/appointments/{,patient,doctor,slots}
+## Implemented
+### Iteration 1 (Feb 2026)
+- Firebase email/password + Google sign-in, role selection
+- Patient: Dashboard, Mood Log, Journal (with AI emotion), Chat, Assessment wizard (PHQ-9, GAD-7),
+  Analytics (recharts), Book Appointment, Appointments list
+- Doctor: Registration, Pending screen, Dashboard
+- Admin: Console with stats + pending doctors + users + high-risk tabs
+- All 12 `/api/*` routers, Firebase JWT verification, emergentintegrations AI
 
-## Testing
-- Backend: 22/22 pytest assertions pass
-- Frontend: E2E for patient/doctor/admin flows pass (testing_agent_v3 iteration 1)
-- Known limitation: Google Sign-In button tested for render only (requires real Google
-  account interaction)
+### Iteration 2 (Feb 2026)
+- **Patient Profile** page (age/gender/medical history) at `/patient/profile`
+- **Doctor "My Patients"** with risk-sorted list at `/doctor/patients`
+- **Doctor Appointments** tab at `/doctor/appointments`
+- **Admin Appointments** tab: list + Cancel + Reschedule dialog
+- **Firebase password reset** dialog from the sign-in form
+- **Doctor profile image upload** via Emergent object storage (replaces URL input);
+  public `/api/files/{path}` download route for avatars visible to all patients
+- **Mocked email notifications** on doctor approval/rejection + appointment booking/cancellation
+  (prints `[MOCKED EMAIL] ...` to backend stdout — swap in Resend/SendGrid later)
 
-## Backlog (next)
-- **P1** Patient profile page (age/gender/medical_history) — backend endpoint exists
-- **P1** Doctor "My patients" list with risk context when viewing an appointment
-- **P2** Admin cancel/reschedule appointments
-- **P2** Email notification on doctor approval + appointment booking (Resend)
-- **P2** Doctor image upload (currently URL input; migrate to object storage)
-- **P2** Password reset flow (Firebase sendPasswordResetEmail)
-- **P3** Localisation + theme switch (dark mode already tokenised)
+## Testing (all green)
+- Backend: 32/32 pytest pass (iteration 1+2 combined)
+- Frontend E2E: all 3 roles, all core flows, admin cancel/reschedule — all pass
+- Known: Google Sign-In tested render-only; real OAuth requires manual test
+
+## Backlog
+- **P1** Real email provider: Resend (needs API key) — replace `notification_service.py` stubs
+- **P1** Wire `send_appointment_booked` on POST /api/appointments/ (already added)
+- **P2** Doctor calendar view (week/month) instead of flat list
+- **P2** Admin "analytics" tab with overall mood/risk trends
+- **P3** Weekly progress PDF the patient can share with their therapist (revenue idea)
+- **P3** Dark mode toggle (tokens already support it)
+- **P3** Voice journaling (Whisper) + TTS replies for the chatbot
