@@ -9,4 +9,4 @@ class User(Base):
     firebase_uid = Column(String, unique=True, index=True)
     email = Column(String, index=True)
     name = Column(String, nullable=True)
-    role = Column(String, default="patient")  # patient / doctor / admin
+    role = Column(String, nullable=True)  # patient / doctor / admin (null until user selects)

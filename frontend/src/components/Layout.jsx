@@ -18,7 +18,7 @@ const PATIENT_NAV = [
   { to: "/patient/journal", label: "Journal" },
   { to: "/patient/chat", label: "Chat" },
   { to: "/patient/analytics", label: "Analytics" },
-  { to: "/patient/assessment", label: "Assessments" },
+  { to: "/patient/assessment", label: "Assessment" },
   { to: "/patient/book", label: "Book" },
   { to: "/patient/appointments", label: "Appointments" },
 ];

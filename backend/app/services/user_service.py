@@ -9,7 +9,7 @@ def get_or_create_user(db, firebase_user):
             firebase_uid=firebase_user["uid"],
             email=firebase_user.get("email"),
             name=firebase_user.get("name"),
-            role="patient",
+            role=None,
         )
         db.add(user)
         db.commit()
