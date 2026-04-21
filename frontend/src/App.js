@@ -16,10 +16,12 @@ import Chat from "@/pages/patient/Chat";
 import Assessment from "@/pages/patient/Assessment";
 import Analytics from "@/pages/patient/Analytics";
 import BookAppointment from "@/pages/patient/BookAppointment";
+import PatientProfile from "@/pages/patient/Profile";
 
 import DoctorRegister from "@/pages/doctor/DoctorRegister";
 import DoctorPending from "@/pages/doctor/DoctorPending";
 import DoctorDashboard from "@/pages/doctor/DoctorDashboard";
+import MyPatients from "@/pages/doctor/MyPatients";
 
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 
@@ -78,6 +80,7 @@ function App() {
             <Route path="/patient/analytics" element={<Analytics />} />
             <Route path="/patient/book" element={<BookAppointment />} />
             <Route path="/patient/appointments" element={<Appointments mode="patient" />} />
+            <Route path="/patient/profile" element={<PatientProfile />} />
           </Route>
 
           {/* Doctor routes */}
@@ -85,6 +88,8 @@ function App() {
           <Route path="/doctor/pending" element={<ProtectedRoute roles={["doctor"]}><DoctorPending /></ProtectedRoute>} />
           <Route element={<ProtectedRoute roles={["doctor"]}><Layout /></ProtectedRoute>}>
             <Route path="/doctor" element={<DoctorDashboard />} />
+            <Route path="/doctor/patients" element={<MyPatients />} />
+            <Route path="/doctor/appointments" element={<Appointments mode="doctor" />} />
           </Route>
 
           {/* Admin routes */}

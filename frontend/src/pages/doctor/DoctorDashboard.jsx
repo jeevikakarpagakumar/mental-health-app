@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Stethoscope } from "lucide-react";
+import { resolveImageUrl } from "@/lib/utils";
 
 export default function DoctorDashboard() {
   const { profile } = useAuth();
@@ -28,7 +29,7 @@ export default function DoctorDashboard() {
     <div className="space-y-10" data-testid="doctor-dashboard">
       <div className="flex items-center gap-5">
         <Avatar className="h-16 w-16 border border-border">
-          <AvatarImage src={dp?.image_url} alt={dp?.name} />
+          <AvatarImage src={resolveImageUrl(dp?.image_url)} alt={dp?.name} />
           <AvatarFallback>{dp?.name?.[0] || "D"}</AvatarFallback>
         </Avatar>
         <div>

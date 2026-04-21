@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import ImageUpload from "@/components/ImageUpload";
 import { Loader2, Stethoscope } from "lucide-react";
 
 export default function DoctorRegister() {
@@ -17,7 +18,7 @@ export default function DoctorRegister() {
     specialization: "",
     experience: 1,
     qualification: "",
-    image_url: "https://images.pexels.com/photos/8460157/pexels-photo-8460157.jpeg",
+    image_url: "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -71,7 +72,15 @@ export default function DoctorRegister() {
             required
           />
         </div>
-        <Field label="Profile image URL" value={form.image_url} onChange={update("image_url")} testid="doc-image" placeholder="https://…" />
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">Profile photo</Label>
+          <ImageUpload
+            value={form.image_url}
+            onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
+            fallback={form.name?.[0]?.toUpperCase() || "D"}
+            testId="doctor-image"
+          />
+        </div>
 
         <Button type="submit" size="lg" className="w-full rounded-full" disabled={busy} data-testid="doc-submit-btn">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit for approval"}

@@ -91,3 +91,48 @@ def list_approved_doctors(db: Session = Depends(get_db)):
         }
         for d in doctors
     ]
+
+
+
+@router.get("/patients")
+def my_patients(
+    firebase_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Patients who have booked this doctor, with current risk context."""
+    from app.models.appointment import Appointment
+    from app.services.risk_service import detect_risk
+
+    user = get_or_create_user(db, firebase_user)
+    if user.role != "doctor":
+        raise HTTPException(status_code=403, detail="Doctor access required")
+
+    appts = db.query(Appointment).filter(Appointment.doctor_id == user.id).all()
+    patient_ids = list({a.patient_id for a in appts})
+
+    result = []
+    for pid in patient_ids:
+        patient = db.query(User).filter(User.id == pid).first()
+        if not patient:
+            continue
+        patient_appts = [a for a in appts if a.patient_id == pid]
+        latest = sorted(patient_appts, key=lambda a: a.date or "", reverse=True)[0]
+        risk = detect_risk(db, pid)
+        result.append({
+            "id": pid,
+            "email": patient.email,
+            "name": patient.name,
+            "risk_level": risk["risk_level"],
+            "warnings": risk["warnings"],
+            "total_appointments": len(patient_appts),
+            "latest_appointment": {
+                "date": latest.date.isoformat() if latest.date else None,
+                "time_slot": latest.time_slot,
+                "status": latest.status,
+            },
+        })
+
+    # Sort high-risk first
+    order = {"high": 0, "medium": 1, "low": 2}
+    result.sort(key=lambda x: order.get(x["risk_level"], 3))
+    return result

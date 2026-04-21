@@ -3,6 +3,7 @@ import api from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays } from "lucide-react";
+import { resolveImageUrl } from "@/lib/utils";
 
 export default function Appointments({ mode = "patient" }) {
   const [items, setItems] = useState([]);
@@ -42,7 +43,7 @@ export default function Appointments({ mode = "patient" }) {
             <Avatar className="h-12 w-12 border border-border">
               {mode === "patient" ? (
                 <>
-                  <AvatarImage src={a.doctor_image_url} alt={a.doctor_name} />
+                  <AvatarImage src={resolveImageUrl(a.doctor_image_url)} alt={a.doctor_name} />
                   <AvatarFallback>{a.doctor_name?.[0] || "D"}</AvatarFallback>
                 </>
               ) : (

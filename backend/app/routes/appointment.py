@@ -6,6 +6,7 @@ from app.utils.dependencies import get_current_user
 from app.services.user_service import get_or_create_user
 from app.schemas.appointment_schema import AppointmentCreate
 from app.services.appointment_service import book_appointment
+from app.services import notification_service
 from app.models.appointment import Appointment
 from app.models.user import User
 from app.models.doctor_profile import DoctorProfile
@@ -29,6 +30,16 @@ def create_appointment(
 ):
     user = get_or_create_user(db, firebase_user)
     appointment = book_appointment(db, user.id, data)
+
+    doctor_user = db.query(User).filter(User.id == appointment.doctor_id).first()
+    if doctor_user:
+        notification_service.send_appointment_booked(
+            user.email or "",
+            doctor_user.email or "",
+            appointment.date.isoformat() if appointment.date else "",
+            appointment.time_slot or "",
+        )
+
     return {
         "message": "Appointment booked",
         "appointment_id": appointment.id,

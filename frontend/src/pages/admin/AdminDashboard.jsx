@@ -55,6 +55,27 @@ export default function AdminDashboard() {
     }
   };
 
+  const cancelAppt = async (id) => {
+    try {
+      await api.patch(`/admin/appointments/${id}`, { status: "cancelled" });
+      toast.success("Appointment cancelled");
+      await loadAll();
+    } catch { toast.error("Could not cancel"); }
+  };
+
+  const rescheduleAppt = async (form) => {
+    if (!editing) return;
+    try {
+      await api.patch(`/admin/appointments/${editing.id}`, {
+        date: form.date,
+        time_slot: form.time_slot,
+      });
+      toast.success("Appointment rescheduled");
+      setEditing(null);
+      await loadAll();
+    } catch { toast.error("Could not reschedule"); }
+  };
+
   return (
     <div className="space-y-10" data-testid="admin-dashboard">
       <div>
@@ -87,6 +108,9 @@ export default function AdminDashboard() {
           <TabsTrigger value="risk" data-testid="tab-risk">
             <AlertTriangle className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} /> High-risk
           </TabsTrigger>
+          <TabsTrigger value="appointments" data-testid="tab-appointments">
+            <CalendarDays className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} /> Appointments
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-3 mt-6">
@@ -98,7 +122,7 @@ export default function AdminDashboard() {
           {pending.map((d) => (
             <div key={d.id} className="rounded-lg border border-border bg-card p-5 flex items-center gap-5" data-testid={`pending-doctor-${d.id}`}>
               <Avatar className="h-12 w-12 border border-border">
-                <AvatarImage src={d.image_url} alt={d.name} />
+                <AvatarImage src={resolveImageUrl(d.image_url)} alt={d.name} />
                 <AvatarFallback>{d.name?.[0] || "D"}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -122,7 +146,7 @@ export default function AdminDashboard() {
           {allDoctors.map((d) => (
             <div key={d.id} className="rounded-lg border border-border bg-card p-5 flex items-center gap-5">
               <Avatar className="h-10 w-10 border border-border">
-                <AvatarImage src={d.image_url} alt={d.name} />
+                <AvatarImage src={resolveImageUrl(d.image_url)} alt={d.name} />
                 <AvatarFallback>{d.name?.[0] || "D"}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -178,8 +202,84 @@ export default function AdminDashboard() {
             </div>
           ))}
         </TabsContent>
+
+        <TabsContent value="appointments" className="space-y-3 mt-6">
+          {appointments.length === 0 && (
+            <div className="rounded-lg border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+              No appointments yet.
+            </div>
+          )}
+          {appointments.map((a) => (
+            <div key={a.id} className="rounded-lg border border-border bg-card p-5 flex items-center gap-4 flex-wrap" data-testid={`admin-appt-${a.id}`}>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">{a.patient_name || a.patient_email} → {a.doctor_name}</div>
+                <div className="text-xs text-muted-foreground">{a.patient_email} · {a.doctor_email}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm">{a.date}</div>
+                <div className="text-xs text-muted-foreground">{a.time_slot}</div>
+              </div>
+              <Badge variant="outline" className={`capitalize ${a.status === "cancelled" ? "border-accent/30 bg-accent/5 text-accent" : ""}`}>{a.status}</Badge>
+              {a.status !== "cancelled" && (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setEditing(a)} data-testid={`reschedule-${a.id}`}>
+                    <Edit className="h-3.5 w-3.5 mr-1" /> Reschedule
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => cancelAppt(a.id)} data-testid={`cancel-${a.id}`}>
+                    <Ban className="h-3.5 w-3.5 mr-1" /> Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </TabsContent>
       </Tabs>
+
+      <RescheduleDialog appt={editing} onClose={() => setEditing(null)} onSave={rescheduleAppt} />
     </div>
+  );
+}
+
+function RescheduleDialog({ appt, onClose, onSave }) {
+  const [date, setDate] = useState("");
+  const [slot, setSlot] = useState("");
+
+  useEffect(() => {
+    if (appt) {
+      setDate(appt.date || "");
+      setSlot(appt.time_slot || "");
+    }
+  }, [appt]);
+
+  if (!appt) return null;
+
+  return (
+    <Dialog open={!!appt} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reschedule appointment</DialogTitle>
+          <DialogDescription>
+            {appt.patient_name || appt.patient_email} with {appt.doctor_name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">New date</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11" data-testid="reschedule-date" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">New time slot</Label>
+            <Input value={slot} onChange={(e) => setSlot(e.target.value)} placeholder="e.g. 10:00 AM" className="h-11" data-testid="reschedule-slot" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSave({ date, time_slot: slot })} data-testid="reschedule-save-btn">
+            Save changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

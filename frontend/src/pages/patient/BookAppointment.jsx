@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CalendarDays, Loader2, Stethoscope } from "lucide-react";
+import { resolveImageUrl } from "@/lib/utils";
 
 export default function BookAppointment() {
   const [doctors, setDoctors] = useState([]);
@@ -88,7 +89,7 @@ export default function BookAppointment() {
                 >
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12 border border-border">
-                      <AvatarImage src={d.image_url} alt={d.name} />
+                      <AvatarImage src={resolveImageUrl(d.image_url)} alt={d.name} />
                       <AvatarFallback>{d.name?.[0] || "D"}</AvatarFallback>
                     </Avatar>
                     <div>

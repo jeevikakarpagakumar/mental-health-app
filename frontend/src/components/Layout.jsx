@@ -21,9 +21,14 @@ const PATIENT_NAV = [
   { to: "/patient/assessment", label: "Assessment" },
   { to: "/patient/book", label: "Book" },
   { to: "/patient/appointments", label: "Appointments" },
+  { to: "/patient/profile", label: "Profile" },
 ];
 
-const DOCTOR_NAV = [{ to: "/doctor", label: "Dashboard" }];
+const DOCTOR_NAV = [
+  { to: "/doctor", label: "Dashboard" },
+  { to: "/doctor/patients", label: "My patients" },
+  { to: "/doctor/appointments", label: "Appointments" },
+];
 const ADMIN_NAV = [{ to: "/admin", label: "Admin Console" }];
 
 export default function Layout() {

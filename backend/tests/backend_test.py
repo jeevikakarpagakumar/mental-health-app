@@ -55,6 +55,14 @@ class TestAuthGuards:
         ("/api/assessment/", "POST"),
         ("/api/analytics/", "GET"),
         ("/api/risk/", "GET"),
+        # iteration 2 – new endpoints
+        ("/api/patient/profile", "GET"),
+        ("/api/patient/profile", "POST"),
+        ("/api/doctor/patients", "GET"),
+        ("/api/admin/appointments", "GET"),
+        ("/api/admin/appointments/1", "PATCH"),
+        ("/api/admin/appointments/1", "DELETE"),
+        ("/api/upload/image", "POST"),
     ])
     def test_no_token_rejected(self, api, path, method):
         r = api.request(method, f"{BASE_URL}{path}", json={})
@@ -96,3 +104,28 @@ class TestUnknownRoute:
     def test_unknown(self, api):
         r = api.get(f"{BASE_URL}/api/does-not-exist")
         assert r.status_code == 404
+
+
+# ---------- Iteration 2: Public file download endpoint (no auth) ----------
+class TestPublicFiles:
+    def test_files_unknown_returns_404_not_401(self, api):
+        # Must be public (no auth) and return 404 for a missing object, NOT 401/403
+        r = api.get(f"{BASE_URL}/api/files/nonexistent/path/xyz.png")
+        assert r.status_code == 404, f"expected 404 public, got {r.status_code}"
+
+    def test_files_no_auth_header_not_rejected(self, api):
+        # Even without any Authorization header it should go through to download_file
+        r = requests.get(f"{BASE_URL}/api/files/does/not/exist.jpg")
+        assert r.status_code == 404
+
+
+# ---------- Iteration 2: Upload rejects wrong content type (after auth) ----------
+class TestUploadGuards:
+    def test_upload_image_no_auth(self, api):
+        # multipart/form-data, no Authorization → still 401/403
+        s = requests.Session()
+        r = s.post(
+            f"{BASE_URL}/api/upload/image",
+            files={"file": ("x.png", b"\x89PNG\r\n", "image/png")},
+        )
+        assert r.status_code in (401, 403)

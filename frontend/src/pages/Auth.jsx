@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Leaf, Loader2 } from "lucide-react";
+import ForgotPasswordDialog from "@/components/ForgotPasswordDialog";
 
 const AUTH_BG = "https://static.prod-images.emergentagent.com/jobs/b0e01279-a003-438d-83aa-07285e8af13d/images/ea3694d6ead0745c248fa919c695c3873ba42f9a02fc36e68751997e7add69a0.png";
 
@@ -135,6 +136,9 @@ export default function Auth() {
               <form onSubmit={handleEmailSignIn} className="space-y-4">
                 <Field label="Email" type="email" value={email} onChange={setEmail} required testid="signin-email" />
                 <Field label="Password" type="password" value={password} onChange={setPassword} required testid="signin-password" />
+                <div className="flex justify-end">
+                  <ForgotPasswordDialog />
+                </div>
                 <Button type="submit" className="w-full" size="lg" disabled={busy} data-testid="signin-submit-btn">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
                 </Button>

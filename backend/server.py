@@ -21,7 +21,7 @@ from app.core import firebase  # noqa: F401
 # Routers
 from app.routes import (
     mood, journal, insights, chat, analytics, risk,
-    assessment, user, patient, doctor, admin, appointment,
+    assessment, user, patient, doctor, admin, appointment, upload,
 )
 
 app = FastAPI(title="Mental Health AI API", version="1.0.0")
@@ -40,6 +40,11 @@ api_router.include_router(patient.router, prefix="/patient", tags=["Patient"])
 api_router.include_router(doctor.router, prefix="/doctor", tags=["Doctor"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
 api_router.include_router(appointment.router, prefix="/appointments", tags=["Appointments"])
+api_router.include_router(upload.router, prefix="/upload", tags=["Upload"])
+
+# Public download endpoint (no auth, for doctor avatars etc.)
+from app.routes.upload import download_file as _download_file
+api_router.add_api_route("/files/{path:path}", _download_file, methods=["GET"], tags=["Files"])
 
 
 @api_router.get("/")
