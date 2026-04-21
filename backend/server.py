@@ -1,89 +1,58 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
+"""FastAPI entrypoint: mounts the mental health API under /api prefix.
 
+Supervisor runs: uvicorn server:app
+"""
+from fastapi import FastAPI, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Initialise DB + models (creates tables on SQLite)
+from app.db.database import Base, engine
+from app import models  # noqa: F401  imports all models
+Base.metadata.create_all(bind=engine)
 
-# Create the main app without a prefix
-app = FastAPI()
+# Initialise Firebase Admin SDK
+from app.core import firebase  # noqa: F401
 
-# Create a router with the /api prefix
+# Routers
+from app.routes import (
+    mood, journal, insights, chat, analytics, risk,
+    assessment, user, patient, doctor, admin, appointment,
+)
+
+app = FastAPI(title="Mental Health AI API", version="1.0.0")
+
 api_router = APIRouter(prefix="/api")
 
+api_router.include_router(user.router, prefix="/user", tags=["User"])
+api_router.include_router(mood.router, prefix="/mood", tags=["Mood"])
+api_router.include_router(journal.router, prefix="/journal", tags=["Journal"])
+api_router.include_router(insights.router, prefix="/insights", tags=["Insights"])
+api_router.include_router(chat.router, prefix="/chat", tags=["Chatbot"])
+api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+api_router.include_router(risk.router, prefix="/risk", tags=["Risk"])
+api_router.include_router(assessment.router, prefix="/assessment", tags=["Assessment"])
+api_router.include_router(patient.router, prefix="/patient", tags=["Patient"])
+api_router.include_router(doctor.router, prefix="/doctor", tags=["Doctor"])
+api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
+api_router.include_router(appointment.router, prefix="/appointments", tags=["Appointments"])
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
 @api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+def root():
+    return {"message": "Mental Health AI Backend Running"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
