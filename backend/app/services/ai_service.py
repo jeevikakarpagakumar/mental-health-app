@@ -1,9 +1,8 @@
-"""AI emotion classification using Emergent LLM (GPT)."""
+"""AI emotion classification using OpenAI LLM."""
 import os
 import re
 import json
-import uuid
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from openai import AsyncOpenAI
 
 EMOTION_LABELS = [
     "joy", "sadness", "anger", "fear", "love",
@@ -20,25 +19,38 @@ Respond ONLY in valid JSON of the form:
 
 No prose, no markdown, no code fences."""
 
+# Initialize async client
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 async def analyze_emotion(text: str) -> dict:
-    api_key = os.getenv("EMERGENT_LLM_KEY")
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=f"emotion-{uuid.uuid4()}",
-        system_message=SYSTEM_PROMPT,
-    ).with_model("openai", "gpt-4o-mini")
-
     try:
-        response = await chat.send_message(UserMessage(text=text))
-        # Strip possible code fences
-        cleaned = re.sub(r"```(?:json)?|```", "", response).strip()
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": text}
+            ],
+            temperature=0.2
+        )
+
+        content = response.choices[0].message.content
+
+        # 🔧 Clean possible code fences
+        cleaned = re.sub(r"```(?:json)?|```", "", content).strip()
+
         data = json.loads(cleaned)
+
+        # ✅ Validation (same as your original)
         emotion = str(data.get("emotion", "neutral")).lower()
         if emotion not in EMOTION_LABELS:
             emotion = "neutral"
+
         confidence = float(data.get("confidence", 0.5))
         confidence = max(0.0, min(1.0, confidence))
+
         return {"emotion": emotion, "confidence": confidence}
-    except Exception:
+
+    except Exception as e:
+        print("AI Error:", e)
         return {"emotion": "neutral", "confidence": 0.0}
